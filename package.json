@@ -1,5 +1,5 @@
 {
-  "name": "particle-biconomy-demo",
+  "name": "particle-biconomy-example",
   "version": "1.0.0",
   "type": "module",
   "description": "Boilerplate demo application for leveraging AA with Particle WaaS + Biconomy",
