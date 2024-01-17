@@ -1,90 +1,103 @@
 import React, { useState, useEffect } from 'react';
-import { ParticleNetwork } from '@particle-network/auth';
-import { ParticleProvider } from '@particle-network/provider';
+import { useEthereum, useConnect, useAuthCore } from '@particle-network/auth-core-modal';
 import { EthereumGoerli } from '@particle-network/chains';
-import { AAWrapProvider, SmartAccount, SendTransactionMode } from '@particle-network/aa';
+import { AAWrapProvider, SendTransactionMode, SmartAccount } from '@particle-network/aa';
 import { ethers } from 'ethers';
+import { notification } from 'antd';
 
 import './App.css';
 
-const config = {
-  projectId: process.env.REACT_APP_PROJECT_ID,
-  clientKey: process.env.REACT_APP_CLIENT_KEY,
-  appId: process.env.REACT_APP_APP_ID,
-};
-
-const particle = new ParticleNetwork({
-  ...config,
-  chainName: EthereumGoerli.name,
-  chainId: EthereumGoerli.id,
-  wallet: { displayWalletEntry: true, uiMode: 'dark' },
-});
-
-const smartAccount = new SmartAccount(new ParticleProvider(particle.auth), {
-  ...config,
-  networkConfig: [
-    { dappAPIKey: process.env.REACT_APP_BICONOMY_KEY, chainId: EthereumGoerli.id }
-  ],
-});
-
-const customProvider = new ethers.providers.Web3Provider(new AAWrapProvider(smartAccount, SendTransactionMode.Gasless), "any");
-particle.setERC4337(true);
-
 const App = () => {
-  const [userInfo, setUserInfo] = useState(null);
-  const [ethBalance, setEthBalance] = useState(null);
+  const { provider } = useEthereum();
+  const { connect, disconnect } = useConnect();
+  const { userInfo } = useAuthCore();
+
+  const smartAccount = new SmartAccount(provider, {
+    projectId: process.env.REACT_APP_PROJECT_ID,
+    clientKey: process.env.REACT_APP_CLIENT_KEY,
+    appId: process.env.REACT_APP_APP_ID,
+    aaOptions: {
+      biconomy: [{ chainId: EthereumGoerli.id, version: '2.0.0' }],
+      paymasterApiKeys: [{
+        chainId: 5,
+        apiKey: process.env.REACT_APP_BICONOMY_KEY
+      }]
+    },
+  });
+
+  const customProvider = new ethers.providers.Web3Provider(new AAWrapProvider(smartAccount, SendTransactionMode.Gasless), "any");
+  const [balance, setBalance] = useState(null);
 
   useEffect(() => {
     if (userInfo) {
-      fetchEthBalance();
+      fetchBalance();
     }
-  }, [userInfo]);
+  }, [userInfo, smartAccount, customProvider]);
 
-  const fetchEthBalance = async () => {
+  const fetchBalance = async () => {
     const address = await smartAccount.getAddress();
-    const balance = await customProvider.getBalance(address);
-    setEthBalance(ethers.utils.formatEther(balance));
+    const balanceResponse = await customProvider.getBalance(address);
+    setBalance(ethers.utils.formatEther(balanceResponse));
   };
 
-  const handleLogin = async (preferredAuthType) => {
-    const user = !particle.auth.isLogin() ? await particle.auth.login({preferredAuthType}) : particle.auth.getUserInfo();
-    setUserInfo(user);
-  }
+  const handleLogin = async (authType) => {
+    if (!userInfo) {
+      await connect({
+        socialType: authType,
+        chain: EthereumGoerli,
+      });
+    }
+  };
 
   const executeUserOp = async () => {
     const signer = customProvider.getSigner();
-
     const tx = {
       to: "0x000000000000000000000000000000000000dEaD",
-      value: ethers.utils.parseEther("0.001"),
+      value: ethers.utils.parseEther("0.0001"),
     };
-
     const txResponse = await signer.sendTransaction(tx);
     const txReceipt = await txResponse.wait();
-    console.log('Transaction hash:', txReceipt.transactionHash);
+    notification.success({
+      message: 'Transaction Successful',
+      description: (
+        <div>
+          Transaction Hash: <a href={`https://goerli.etherscan.io/tx/${txReceipt.transactionHash}`} target="_blank" rel="noopener noreferrer">{txReceipt.transactionHash}</a>
+        </div>
+      )
+    });
   };
 
   return (
-  <div className="App">
-    <div className="logos-section">
-      <img src="https://lever-client-logos.s3.us-west-2.amazonaws.com/73c89f44-01e6-4d0a-9354-9661e253e4bf-1685457360524.png" alt="Biconomy Logo" className="biconomy-logo" />
-      <img src="https://i.imgur.com/2btL79J.png" alt="Particle Network Logo" className="particle-logo" />
-    </div>
-    {!userInfo ? (
-      <div className="login-section">
-        <button className="sign-button" onClick={() => handleLogin('google')}>Sign in with Google</button>
-        <button className="sign-button" onClick={() => handleLogin('twitter')}>Sign in with Twitter</button>
+    <div className="App">
+      <div className="logo-section">
+        <img src="https://i.imgur.com/EerK7MS.png" alt="Logo 1" className="logo logo-big" />
+        <img src="https://i.imgur.com/SVsSr9L.png" alt="Logo 2" className="logo logo-big" />
       </div>
-    ) : (
-      <div className="profile-card">
-        <h2>{userInfo.name}</h2>
-        <div className="avax-balance-section">
-          <small>{ethBalance} ETH</small>
-          <button className="sign-message-button" onClick={executeUserOp}>Execute User Operation</button>
+      {!userInfo ? (
+        <div className="login-section">
+          <button className="sign-button google-button" onClick={() => handleLogin('google')}>
+            <img src="https://i.imgur.com/nIN9P4A.png" alt="Google" className="icon"/>
+            Sign in with Google
+          </button>
+          <button className="sign-button twitter-button" onClick={() => handleLogin('twitter')}>
+            <img src="https://i.imgur.com/afIaQJC.png" alt="Twitter" className="icon"/>
+            Sign in with X
+          </button>
+          <button className="sign-button other-button" onClick={() => handleLogin('')}>
+            <img src="https://i.imgur.com/VRftF1b.png" alt="Twitter" className="icon"/>
+          </button>
         </div>
-      </div>
-    )}
-  </div>
+      ) : (
+        <div className="profile-card">
+          <h2>{userInfo.name}</h2>
+          <div className="balance-section">
+            <small>{balance} ETH</small>
+            <button className="sign-message-button" onClick={executeUserOp}>Execute User Operation</button>het
+            <button className="disconnect-button" onClick={disconnect}>Logout</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

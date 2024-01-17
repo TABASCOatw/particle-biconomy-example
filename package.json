@@ -1,8 +1,8 @@
 {
-  "name": "particle-biconomy-example",
+  "name": "particle-biconomy-demo",
   "version": "1.0.0",
   "type": "module",
-  "description": "Boilerplate demo application for leveraging AA with Particle WaaS + Biconomy",
+  "description": "Example application showcasing the utilization of Biconomy's Paymaster with Particle Network's AA SDK.",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -13,25 +13,25 @@
   "license": "ISC",
   "devDependencies": {
     "@types/react": "^18.0.15",
-    "@types/react-dom": "^18.0.6",
     "@vitejs/plugin-react": "^2.0.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "typescript": "^4.7.4",
     "vite": "^3.0.4"
   },
   "dependencies": {
-    "@particle-network/aa": "^1.1.0",
-    "@particle-network/auth": "^1.2.1",
-    "@particle-network/chains": "^1.2.1",
-    "@particle-network/connect": "^1.2.0",
-    "@particle-network/connect-react-ui": "^1.2.0",
+    "@particle-network/aa": "1.2.0",
+    "@particle-network/auth": "^1.2.2",
+    "@particle-network/auth-core": "^1.3.1",
+    "@particle-network/auth-core-modal": "^1.3.1",
+    "@particle-network/chains": "latest",
     "@particle-network/provider": "^1.2.0",
-    "antd": "^5.9.4",
+    "@particle-network/thresh-sig": "^0.7.8",
+    "@types/events": "^3.0.3",
+    "antd": "^5.11.5",
+    "buffer": "^6.0.3",
     "ethers": "5.7.2",
-    "particle-connect-boilerplate": "file:",
-    "permissionless": "^0.0.6",
-    "viem": "^1.16.3",
-    "web3": "^4.1.2"
+    "react-dom": "^18.2.0",
+    "thresh": "^1.1.0",
+    "vite-plugin-wasm": "^3.2.2"
   }
 }
